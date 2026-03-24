@@ -1,0 +1,5 @@
+[
+  {"code": "GBTEST01", "is_active": true, "max_uses": 3},
+  {"code": "GBTEST02", "is_active": true, "max_uses": 3},
+  {"code": "GBTEST03", "is_active": true, "max_uses": 3}
+]
