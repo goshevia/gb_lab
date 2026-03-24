@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab · тренажёр коммуникации</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="page">
+    <div class="card" id="startCard">
+      <h1>Тренажёр коммуникации</h1>
+      <p class="muted">Тестовый режим. Введите имя и код доступа, чтобы начать диалог.</p>
+
+      <label>Имя или псевдоним</label>
+      <input id="participantName" type="text" placeholder="Например, Иван" />
+
+      <label>Код доступа</label>
+      <input id="accessCode" type="text" placeholder="Например, GBTEST01" />
+
+      <button id="startBtn">Начать</button>
+      <div id="startError" class="error"></div>
+    </div>
+
+    <div class="card hidden" id="chatCard">
+      <div class="topbar">
+        <div>
+          <h2>Диалог</h2>
+          <div class="muted" id="remainingInfo"></div>
+        </div>
+        <button id="finishBtn" class="secondary">Завершить</button>
+      </div>
+
+      <div id="chatBox" class="chat-box"></div>
+
+      <div class="input-row">
+        <textarea id="messageInput" placeholder="Введите вашу реплику..."></textarea>
+        <button id="sendBtn">Отправить</button>
+      </div>
+      <div id="chatError" class="error"></div>
+    </div>
+
+    <div class="card hidden" id="finishCard">
+      <h2>Завершение</h2>
+      <p class="muted">Если хотите, укажите, какой типаж вы предположили.</p>
+      <textarea id="guessedType" placeholder="Например: властный и нетерпеливый руководитель"></textarea>
+      <button id="finalizeBtn">Получить обратную связь</button>
+      <div id="finishError" class="error"></div>
+    </div>
+
+    <div class="card hidden" id="resultCard">
+      <h2>Результат</h2>
+      <div id="resultContent"></div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
