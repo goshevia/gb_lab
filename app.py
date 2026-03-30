@@ -10,6 +10,7 @@ def load_local_settings():
 
 settings = load_local_settings()
 
+
 import random
 import sqlite3
 import time
@@ -42,9 +43,6 @@ client = OpenAI(
     base_url=BASE_URL
 ) if OPENAI_API_KEY else None
 
-
-print("API KEY:", OPENAI_API_KEY)
-print("CLIENT:", client)
 
 def db_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -476,8 +474,7 @@ def send_message():
     try:
         reply = generate_ai_reply(profile, history_rows, session_id)
     except Exception as exc:
-   	print("AI ERROR:", exc)
-   	return jsonify({'error': str(exc)})
+        return jsonify({'error': f'Ошибка при обращении к модели: {exc}'}), 500
 
     add_message(session_id, 'assistant', reply)
 
