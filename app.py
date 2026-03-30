@@ -10,6 +10,8 @@ def load_local_settings():
 
 settings = load_local_settings()
 
+print("API KEY:", OPENAI_API_KEY)
+print("CLIENT:", client)
 
 import random
 import sqlite3
@@ -473,8 +475,9 @@ def send_message():
     history_rows = get_messages(session_id)
     try:
         reply = generate_ai_reply(profile, history_rows, session_id)
-    except Exception as exc:
-        return jsonify({'error': f'Ошибка при обращении к модели: {exc}'}), 500
+	except Exception as exc:
+   	 print("AI ERROR:", exc)
+   	 return jsonify({'error': str(exc)})
 
     add_message(session_id, 'assistant', reply)
 
