@@ -368,17 +368,6 @@ def evaluate_session(session_row, profile: dict, guessed_type: str):
     data = json.loads(cleaned)
     return data, raw_text
 
-raw_text = response.choices[0].message.content.strip()
-
-    raw_text = (getattr(response, 'output_text', None) or '').strip()
-    if not raw_text:
-        raise RuntimeError('Модель вернула пустой ответ на оценивание.')
-    cleaned = raw_text
-    if cleaned.startswith('```'):
-        cleaned = cleaned.strip('`')
-        cleaned = cleaned.replace('json\n', '', 1).strip()
-    data = json.loads(cleaned)
-    return data, raw_text
 
 
 @app.route('/')
