@@ -281,25 +281,25 @@ def build_conversation_input(profile: dict, history_rows):
 def generate_ai_reply(profile: dict, history_rows, session_id: str):
     if client is None:
         raise RuntimeError('OPENAI_API_KEY не задан в окружении сервера.')
-messages = [
-    {"role": "system", "content": build_role_instructions(profile)}
-]
 
-for row in history_rows:
-    messages.append({
-        "role": row["role"],
-        "content": row["text"]
-    })
+    messages = [
+        {"role": "system", "content": build_role_instructions(profile)}
+    ]
 
-response = client.chat.completions.create(
-    model=MODEL_NAME,
-    messages=messages,
-    temperature=0.7
-)
+    for row in history_rows:
+        messages.append({
+            "role": row["role"],
+            "content": row["text"]
+        })
 
-return response.choices[0].message.content.strip()
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=messages,
+        temperature=0.7
+    )
 
-    text = getattr(response, 'output_text', None)
+    return response.choices[0].message.content.strip()
+
     if text:
         return text.strip()
 
@@ -346,15 +346,27 @@ def build_evaluation_prompt(session_row, profile: dict, history_rows, guessed_ty
 def evaluate_session(session_row, profile: dict, guessed_type: str):
     if client is None:
         raise RuntimeError('OPENAI_API_KEY не задан в окружении сервера.')
+
     history_rows = get_messages(session_row['id'])
-response = client.chat.completions.create(
-    model=MODEL_NAME,
-    messages=[
-        {"role": "system", "content": "Ты возвращаешь строго JSON."},
-        {"role": "user", "content": build_evaluation_prompt(session_row, profile, history_rows, guessed_type)}
-    ],
-    temperature=0.3
-)
+
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[
+            {"role": "system", "content": "Ты возвращаешь строго JSON."},
+            {"role": "user", "content": build_evaluation_prompt(session_row, profile, history_rows, guessed_type)}
+        ],
+        temperature=0.3
+    )
+
+    raw_text = response.choices[0].message.content.strip()
+
+    cleaned = raw_text
+    if cleaned.startswith('```'):
+        cleaned = cleaned.strip('`')
+        cleaned = cleaned.replace('json\n', '', 1).strip()
+
+    data = json.loads(cleaned)
+    return data, raw_text
 
 raw_text = response.choices[0].message.content.strip()
 
