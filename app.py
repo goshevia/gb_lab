@@ -1,5 +1,16 @@
 import json
 import os
+
+def load_local_settings():
+    try:
+        with open("local_settings.json", "r") as f:
+            return json.load(f)
+    except:
+        return {}
+
+settings = load_local_settings()
+
+
 import random
 import sqlite3
 import time
@@ -14,9 +25,11 @@ DB_PATH = BASE_DIR / 'trainer.db'
 PROFILES_PATH = BASE_DIR / 'profiles.json'
 ACCESS_CODES_PATH = BASE_DIR / 'access_codes.json'
 
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-MODEL_NAME = os.getenv('OPENAI_MODEL', 'gpt-5-mini')
-APP_SECRET = os.getenv('APP_SECRET', 'change-me-please')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY') or settings.get('OPENAI_API_KEY')
+BASE_URL = os.getenv('OPENAI_BASE_URL') or settings.get('OPENAI_BASE_URL', 'https://api.z.ai/api/paas/v4')
+MODEL_NAME = os.getenv('OPENAI_MODEL') or settings.get('OPENAI_MODEL', 'GLM-4.7-Flash')
+APP_SECRET = os.getenv('APP_SECRET') or settings.get('APP_SECRET', 'change-me-please')
+
 MAX_USER_MESSAGES = int(os.getenv('MAX_USER_MESSAGES', '12'))
 MAX_MESSAGE_CHARS = int(os.getenv('MAX_MESSAGE_CHARS', '600'))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv('RATE_LIMIT_WINDOW_SECONDS', '60'))
@@ -25,7 +38,10 @@ RATE_LIMIT_MAX_REQUESTS = int(os.getenv('RATE_LIMIT_MAX_REQUESTS', '20'))
 app = Flask(__name__)
 app.config['SECRET_KEY'] = APP_SECRET
 
-client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+client = OpenAI(
+    api_key=OPENAI_API_KEY,
+    base_url=BASE_URL
+) if OPENAI_API_KEY else None
 
 
 def db_connection():
@@ -265,11 +281,24 @@ def build_conversation_input(profile: dict, history_rows):
 def generate_ai_reply(profile: dict, history_rows, session_id: str):
     if client is None:
         raise RuntimeError('OPENAI_API_KEY не задан в окружении сервера.')
-    response = client.responses.create(
-        model=MODEL_NAME,
-        input=build_conversation_input(profile, history_rows),
-        user=session_id,
-    )
+messages = [
+    {"role": "system", "content": build_role_instructions(profile)}
+]
+
+for row in history_rows:
+    messages.append({
+        "role": row["role"],
+        "content": row["text"]
+    })
+
+response = client.chat.completions.create(
+    model=MODEL_NAME,
+    messages=messages,
+    temperature=0.7
+)
+
+return response.choices[0].message.content.strip()
+
     text = getattr(response, 'output_text', None)
     if text:
         return text.strip()
@@ -318,11 +347,17 @@ def evaluate_session(session_row, profile: dict, guessed_type: str):
     if client is None:
         raise RuntimeError('OPENAI_API_KEY не задан в окружении сервера.')
     history_rows = get_messages(session_row['id'])
-    response = client.responses.create(
-        model=MODEL_NAME,
-        input=build_evaluation_prompt(session_row, profile, history_rows, guessed_type),
-        user=f"eval-{session_row['id']}",
-    )
+response = client.chat.completions.create(
+    model=MODEL_NAME,
+    messages=[
+        {"role": "system", "content": "Ты возвращаешь строго JSON."},
+        {"role": "user", "content": build_evaluation_prompt(session_row, profile, history_rows, guessed_type)}
+    ],
+    temperature=0.3
+)
+
+raw_text = response.choices[0].message.content.strip()
+
     raw_text = (getattr(response, 'output_text', None) or '').strip()
     if not raw_text:
         raise RuntimeError('Модель вернула пустой ответ на оценивание.')
